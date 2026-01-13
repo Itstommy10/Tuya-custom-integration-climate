@@ -16,58 +16,48 @@ jobs:
           git config user.name "GitHub Action Bot"
           git config user.email "action@github.com"
 
-      - name: Download File Core Ufficiale
+      - name: Sincronizzazione Integrale Cartella Tuya
         run: |
-          # Elimina il file locale esistente
-          rm -f custom_components/tuya/climate.py
+          # 1. Aggiungiamo il repository Core come upstream
+          git remote add upstream https://github.com/home-assistant/core.git
           
-          # Scarica la versione ufficiale
-          mkdir -p custom_components/tuya/
-          curl -L https://raw.githubusercontent.com/home-assistant/core/dev/homeassistant/components/tuya/climate.py \
-            -o custom_components/tuya/climate.py
+          # 2. Scarichiamo solo i metadati del branch dev (molto veloce con --depth 1)
+          git fetch upstream dev --depth 1
           
-          # Verifica download
-          if [ ! -f custom_components/tuya/climate.py ]; then
-            echo "❌ Errore: File non scaricato"
-            exit 1
-          fi
+          # 3. Creiamo/Spostiamoci sul branch di confronto
+          git checkout -b temp-upstream-compare || git checkout temp-upstream-compare
+
+          # 4. SOVRASCRIVIAMO tutta la tua cartella locale con quella del Core
+          # Questo comando prende TUTTI i file da upstream e li mette nella tua cartella
+          git checkout upstream/dev -- homeassistant/components/tuya/
           
-          echo "✅ File scaricato: $(wc -l < custom_components/tuya/climate.py) righe"
+          # 5. Spostiamo i file nella posizione corretta del tuo repo (custom_components)
+          # Prima puliamo la tua cartella per eliminare file che il Core ha rimosso
+          rm -rf custom_components/tuya/*
+          cp -r homeassistant/components/tuya/* custom_components/tuya/
+          
+          # 6. Pulizia cartella temporanea scaricata
+          rm -rf homeassistant/
+
+          # 7. Commit di tutto (Git vedrà cambiamenti in ogni file modificato)
+          git add custom_components/tuya/
+          git commit -m "🔄 Sincronizzazione integrale con Home Assistant Core (Tutti i file)"
+          git push origin temp-upstream-compare --force
 
       - name: Crea Pull Request
-        uses: peter-evans/create-pull-request@v6 # Usa v6, più recente
+        uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           branch: temp-upstream-compare
-          delete-branch: true # Elimina il branch dopo il merge
+          delete-branch: true
           base: main
-          commit-message: "🔄 Sostituzione con versione Core ufficiale"
-          title: "⚠️ CONFLITTO ATTESO: Allineamento Core"
+          title: "⚠️ SINCRONIZZAZIONE TOTALE: Core vs Custom"
           body: |
-            ## 📋 Descrizione
+            Questa PR confronta l'intera cartella `custom_components/tuya/` con la versione ufficiale del Core.
             
-            Questa PR contiene la versione **vergine** del file `climate.py` dal repository ufficiale Home Assistant Core.
+            **File controllati:** Tutti i file nella cartella (climate.py, __init__.py, const.py, ecc.)
             
-            ### 🎯 Obiettivo
-            Confrontare le modifiche Cecotec con la versione upstream per identificare conflitti.
-            
-            ### ⚙️ Cosa è stato fatto
-            - ✅ Eliminato il file locale esistente
-            - ✅ Scaricato `climate.py` da `home-assistant/core@dev`
-            - ✅ Creato branch `temp-upstream-compare`
-            
-            ### ⚠️ Conflitti Attesi
-            GitHub dovrebbe mostrare automaticamente i conflitti tra:
-            - Le tue modifiche per i dispositivi Cecotec
-            - La versione ufficiale del Core
-            
-            ### 📝 Prossimi Passi
-            1. Rivedi i conflitti nella tab "Files changed"
-            2. Risolvi manualmente i conflitti mantenendo le modifiche Cecotec
-            3. Testa il codice risultante
-            
-            ---
-            *Generato automaticamente da GitHub Actions*
-          labels: |
-            sync
-            needs-review
+            **Istruzioni per PyCharm:**
+            1. Fai `Fetch` da PyCharm.
+            2. Confronta il tuo `main` con `origin/temp-upstream-compare`.
+            3. Risolvi i conflitti file per file mantenendo i tuoi fix Cecotec.
