@@ -1,8 +1,7 @@
 {
   "domain": "tuya",
-  "version": "2025.12.3-patch",
   "name": "Tuya",
-  "codeowners": ["@Tuya", "@Itstommy10"],
+  "codeowners": ["@Tuya", "@zlinoliver"],
   "config_flow": true,
   "dependencies": ["ffmpeg"],
   "dhcp": [
@@ -41,9 +40,8 @@
     }
   ],
   "documentation": "https://www.home-assistant.io/integrations/tuya",
-  "version": "1.0.3",
   "integration_type": "hub",
   "iot_class": "cloud_push",
   "loggers": ["tuya_sharing"],
-  "requirements": ["tuya-device-sharing-sdk==0.2.6"]
+  "requirements": ["tuya-device-sharing-sdk==0.2.8"]
 }
