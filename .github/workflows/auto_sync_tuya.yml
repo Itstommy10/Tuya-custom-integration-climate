@@ -18,31 +18,26 @@ jobs:
 
       - name: Sincronizzazione Integrale Cartella Tuya
         run: |
-          # 1. Aggiungiamo il repository Core come upstream
           git remote add upstream https://github.com/home-assistant/core.git
-          
-          # 2. Scarichiamo solo i metadati del branch dev (molto veloce con --depth 1)
           git fetch upstream dev --depth 1
           
-          # 3. Creiamo/Spostiamoci sul branch di confronto
-          git checkout -b temp-upstream-compare || git checkout temp-upstream-compare
-
-          # 4. SOVRASCRIVIAMO tutta la tua cartella locale con quella del Core
-          # Questo comando prende TUTTI i file da upstream e li mette nella tua cartella
-          git checkout upstream/dev -- homeassistant/components/tuya/
+          # Creiamo una cartella temporanea esterna per i nuovi file
+          mkdir -p /tmp/tuya_core
+          git archive upstream/dev homeassistant/components/tuya/ | tar -x -C /tmp/tuya_core
           
-          # 5. Spostiamo i file nella posizione corretta del tuo repo (custom_components)
-          # Prima puliamo la tua cartella per eliminare file che il Core ha rimosso
+          # Torniamo (o restiamo) sul main per permettere a create-pull-request di lavorare
+          git checkout main
+          
+          # Sostituiamo i file nella tua cartella locale
           rm -rf custom_components/tuya/*
-          cp -r homeassistant/components/tuya/* custom_components/tuya/
+          cp -r /tmp/tuya_core/homeassistant/components/tuya/* custom_components/tuya/
           
-          # 6. Pulizia cartella temporanea scaricata
-          rm -rf homeassistant/
-
-          # 7. Commit di tutto (Git vedrà cambiamenti in ogni file modificato)
-          git add custom_components/tuya/
-          git commit -m "🔄 Sincronizzazione integrale con Home Assistant Core (Tutti i file)"
-          git push origin temp-upstream-compare --force
+          # Pulizia
+          rm -rf /tmp/tuya_core
+          
+          # NOTA: NON facciamo il commit qui. 
+          # Lasciamo che sia l'azione "create-pull-request" a vedere le modifiche 
+          # locali e a creare il branch/commit/PR tutto in un colpo solo.
 
       - name: Crea Pull Request
         uses: peter-evans/create-pull-request@v6
