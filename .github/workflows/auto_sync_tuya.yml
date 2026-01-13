@@ -25,15 +25,16 @@ jobs:
           mkdir -p /tmp/tuya_core
           git archive upstream/dev homeassistant/components/tuya/ | tar -x -C /tmp/tuya_core
           
-          # 3. Rimuoviamo TUTTO dalla cartella locale e diciamo a Git di seguirci
-          # Usiamo 'git rm' per eliminare anche i .pyc vecchi dall'indice di Git
-          git rm -rf custom_components/tuya/ || rm -rf custom_components/tuya/*
+          # 3. Pulizia fisica della cartella (NON Git rm)
+          # Cancelliamo i file ma non lo diciamo a Git ancora
+          rm -rf custom_components/tuya/*
           mkdir -p custom_components/tuya/
           
-          # 4. Copiamo i file nuovi dal Core
-          cp -r /tmp/tuya_core/homeassistant/components/tuya/* custom_components/tuya/
+          # 4. Copiamo solo i file utili (Python, JSON, Markdown)
+          # Escludiamo alla radice qualsiasi cosa sia cache
+          rsync -av --exclude='__pycache__/' --exclude='*.pyc' /tmp/tuya_core/homeassistant/components/tuya/ custom_components/tuya/
           
-          # 5. Pulizia profonda file compilati (locali al runner)
+          # 5. Verifica finale di sicurezza
           find custom_components/tuya/ -name "__pycache__" -type d -exec rm -rf {} +
           find custom_components/tuya/ -name "*.pyc" -delete
           
