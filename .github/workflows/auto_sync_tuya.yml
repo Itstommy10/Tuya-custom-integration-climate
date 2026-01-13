@@ -20,26 +20,25 @@ jobs:
 
       - name: Preleva codice dal Core Ufficiale
         run: |
-          # Aggiungiamo il repo ufficiale come sorgente
+          # Usiamo --depth 1 per scaricare solo l'ultimo stato del Core, molto più veloce
           git remote add upstream https://github.com/home-assistant/core.git
-          git fetch upstream dev
-
-          # Creiamo un branch per il confronto
+          git fetch upstream dev --depth 1
+          
+          # Creiamo il branch per il confronto
           git checkout -b temp-upstream-compare
-
-          # Sostituiamo il tuo file climate.py con quello del Core
-          # Questo comando estrae il file dal Core e lo mette nel tuo percorso
+          
+          # Estraiamo SOLO il file climate.py dal core
           git checkout upstream/dev -- homeassistant/components/tuya/climate.py
           
-          # Spostiamo il file nel percorso del tuo custom_component
+          # Spostiamolo nella tua cartella custom_components
           mkdir -p custom_components/tuya/
           mv homeassistant/components/tuya/climate.py custom_components/tuya/climate.py
           
-          # Puliamo la cartella creata dal checkout
+          # Pulizia
           rm -rf homeassistant/
-
+          
           git add custom_components/tuya/climate.py
-          git commit -m "Aggiornamento ufficiale dal Core"
+          git commit -m "Aggiornamento ufficiale dal Core del $(date +'%Y-%m-%d')"
           git push origin temp-upstream-compare --force
 
       - name: Crea Pull Request con Conflitti
